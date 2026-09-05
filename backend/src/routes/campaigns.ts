@@ -2,9 +2,19 @@ import { Router } from "express";
 import { v4 as uuid } from "uuid";
 import db from "../db/database.js";
 import { authMiddleware, AuthRequest } from "../middleware/auth.js";
+import { loadSyncConfig } from "../sync/config.js";
+import { mapOcdCampaignToAgencyCampaign, createAgencyCampaign, updateAgencyCampaign, deleteAgencyCampaign } from "../sync/campaigns.js";
 
 const router = Router();
 router.use(authMiddleware);
+
+let syncEnabled = false;
+try {
+  if (process.env.TWENTY_BASE_URL && process.env.TWENTY_API_KEY) {
+    loadSyncConfig();
+    syncEnabled = true;
+  }
+} catch {}
 
 router.get("/", (req, res) => {
   const rows = db.prepare("SELECT * FROM campaigns ORDER BY created_at DESC").all();
@@ -20,13 +30,14 @@ router.get("/:id", (req, res) => {
   res.json(mapCampaign(row));
 });
 
-router.post("/", (req: AuthRequest, res) => {
+router.post("/", async (req: AuthRequest, res) => {
   const id = uuid();
+  const syncId = uuid();
   const now = new Date().toISOString();
   const { name, type, status, settings } = req.body;
 
   db.prepare(
-    "INSERT INTO campaigns (id, name, type, status, settings, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    `INSERT INTO campaigns (id, name, type, status, settings, created_by, sync_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     name,
@@ -34,15 +45,27 @@ router.post("/", (req: AuthRequest, res) => {
     status || "active",
     settings ? JSON.stringify(settings) : null,
     req.userId || null,
+    syncId,
     now,
     now
   );
 
   const row = db.prepare("SELECT * FROM campaigns WHERE id = ?").get(id) as any;
-  res.status(201).json(mapCampaign(row));
+  const mapped = mapCampaign(row);
+
+  if (syncEnabled) {
+    try {
+      const config = loadSyncConfig();
+      await createAgencyCampaign(config, { ...mapOcdCampaignToAgencyCampaign(mapped), sync_id: syncId });
+    } catch (err) {
+      console.error("[sync] failed to sync campaign create:", err);
+    }
+  }
+
+  res.status(201).json(mapped);
 });
 
-router.patch("/:id", (req, res) => {
+router.patch("/:id", async (req, res) => {
   const existing = db.prepare("SELECT * FROM campaigns WHERE id = ?").get(req.params.id) as any;
   if (!existing) {
     res.status(404).json({ error: "Campaign not found" });
@@ -69,15 +92,42 @@ router.patch("/:id", (req, res) => {
 
   db.prepare(`UPDATE campaigns SET ${updates.join(", ")} WHERE id = ?`).run(...values);
   const row = db.prepare("SELECT * FROM campaigns WHERE id = ?").get(req.params.id) as any;
-  res.json(mapCampaign(row));
+  const mapped = mapCampaign(row);
+
+  if (syncEnabled && existing.sync_id) {
+    try {
+      const config = loadSyncConfig();
+      await updateAgencyCampaign(config, existing.sync_id, mapOcdCampaignToAgencyCampaign(mapped));
+    } catch (err) {
+      console.error("[sync] failed to sync campaign update:", err);
+    }
+  }
+
+  res.json(mapped);
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", async (req, res) => {
+  const existing = db.prepare("SELECT * FROM campaigns WHERE id = ?").get(req.params.id) as any;
+  if (!existing) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+
   const result = db.prepare("DELETE FROM campaigns WHERE id = ?").run(req.params.id);
   if (result.changes === 0) {
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
+
+  if (syncEnabled && existing.sync_id) {
+    try {
+      const config = loadSyncConfig();
+      await deleteAgencyCampaign(config, existing.sync_id);
+    } catch (err) {
+      console.error("[sync] failed to sync campaign delete:", err);
+    }
+  }
+
   res.status(204).end();
 });
 
@@ -89,6 +139,7 @@ function mapCampaign(row: any) {
     status: row.status,
     settings: row.settings ? JSON.parse(row.settings) : null,
     created_by: row.created_by,
+    sync_id: row.sync_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

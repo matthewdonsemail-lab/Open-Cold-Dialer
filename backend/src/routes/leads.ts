@@ -2,9 +2,19 @@ import { Router } from "express";
 import { v4 as uuid } from "uuid";
 import db from "../db/database.js";
 import { authMiddleware, AuthRequest } from "../middleware/auth.js";
+import { loadSyncConfig } from "../sync/config.js";
+import { mapOcdLeadToAgencyLead, createAgencyLead, updateAgencyLead, deleteAgencyLead } from "../sync/leads.js";
 
 const router = Router();
 router.use(authMiddleware);
+
+let syncEnabled = false;
+try {
+  if (process.env.TWENTY_BASE_URL && process.env.TWENTY_API_KEY) {
+    loadSyncConfig();
+    syncEnabled = true;
+  }
+} catch {}
 
 router.get("/", (req, res) => {
   const rows = db.prepare("SELECT * FROM leads ORDER BY created_at DESC").all();
@@ -20,8 +30,9 @@ router.get("/:id", (req, res) => {
   res.json(mapLead(row));
 });
 
-router.post("/", (req: AuthRequest, res) => {
+router.post("/", async (req: AuthRequest, res) => {
   const id = uuid();
+  const syncId = uuid();
   const now = new Date().toISOString();
   const {
     first_name, last_name, company, phone, email, website,
@@ -30,22 +41,33 @@ router.post("/", (req: AuthRequest, res) => {
   } = req.body;
 
   db.prepare(
-    `INSERT INTO leads (id, first_name, last_name, company, phone, email, website, address, city, state, zip, status, source, campaign_id, assigned_to, tags, notes, dnc, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO leads (id, first_name, last_name, company, phone, email, website, address, city, state, zip, status, source, campaign_id, assigned_to, tags, notes, dnc, sync_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id, first_name || null, last_name || null, company || null,
     phone || null, email || null, website || null, address || null,
     city || null, state || null, zip || null, status || "new",
     source || null, campaign_id || null, assigned_to || null,
     tags ? JSON.stringify(tags) : null, notes || null,
-    dnc ? 1 : 0, now, now
+    dnc ? 1 : 0, syncId, now, now
   );
 
   const row = db.prepare("SELECT * FROM leads WHERE id = ?").get(id) as any;
-  res.status(201).json(mapLead(row));
+  const mapped = mapLead(row);
+
+  if (syncEnabled) {
+    try {
+      const config = loadSyncConfig();
+      await createAgencyLead(config, { ...mapOcdLeadToAgencyLead(mapped), sync_id: syncId });
+    } catch (err) {
+      console.error("[sync] failed to sync lead create:", err);
+    }
+  }
+
+  res.status(201).json(mapped);
 });
 
-router.patch("/:id", (req, res) => {
+router.patch("/:id", async (req, res) => {
   const existing = db.prepare("SELECT * FROM leads WHERE id = ?").get(req.params.id) as any;
   if (!existing) {
     res.status(404).json({ error: "Lead not found" });
@@ -79,19 +101,46 @@ router.patch("/:id", (req, res) => {
 
   db.prepare(`UPDATE leads SET ${updates.join(", ")} WHERE id = ?`).run(...values);
   const row = db.prepare("SELECT * FROM leads WHERE id = ?").get(req.params.id) as any;
-  res.json(mapLead(row));
+  const mapped = mapLead(row);
+
+  if (syncEnabled && existing.sync_id) {
+    try {
+      const config = loadSyncConfig();
+      await updateAgencyLead(config, existing.sync_id, mapOcdLeadToAgencyLead(mapped));
+    } catch (err) {
+      console.error("[sync] failed to sync lead update:", err);
+    }
+  }
+
+  res.json(mapped);
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", async (req, res) => {
+  const existing = db.prepare("SELECT * FROM leads WHERE id = ?").get(req.params.id) as any;
+  if (!existing) {
+    res.status(404).json({ error: "Lead not found" });
+    return;
+  }
+
   const result = db.prepare("DELETE FROM leads WHERE id = ?").run(req.params.id);
   if (result.changes === 0) {
     res.status(404).json({ error: "Lead not found" });
     return;
   }
+
+  if (syncEnabled && existing.sync_id) {
+    try {
+      const config = loadSyncConfig();
+      await deleteAgencyLead(config, existing.sync_id);
+    } catch (err) {
+      console.error("[sync] failed to sync lead delete:", err);
+    }
+  }
+
   res.status(204).end();
 });
 
-router.post("/import", (req: AuthRequest, res) => {
+router.post("/import", async (req: AuthRequest, res) => {
   const { rows } = req.body;
   if (!Array.isArray(rows) || rows.length === 0) {
     res.status(400).json({ error: "No rows to import" });
@@ -99,16 +148,21 @@ router.post("/import", (req: AuthRequest, res) => {
   }
 
   const insert = db.prepare(
-    `INSERT INTO leads (id, first_name, last_name, company, phone, email, website, address, city, state, zip, status, source, created_at, updated_at)
+    `INSERT INTO leads (id, first_name, last_name, company, phone, email, website, address, city, state, zip, status, source, sync_id, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
   );
 
+  let count = 0;
+  const importedSyncIds: string[] = [];
+
   const insertMany = db.transaction((items: any[]) => {
-    let count = 0;
+    let c = 0;
     for (const row of items) {
       try {
+        const id = uuid();
+        const syncId = uuid();
         insert.run(
-          uuid(),
+          id,
           row.first_name || null,
           row.last_name || null,
           row.company || null,
@@ -120,16 +174,30 @@ router.post("/import", (req: AuthRequest, res) => {
           row.state || null,
           row.zip || null,
           row.status || "new",
-          row.source || "import"
+          row.source || "import",
+          syncId,
         );
-        count++;
+        importedSyncIds.push(syncId);
+        c++;
       } catch {}
     }
-    return count;
+    return c;
   });
 
   const imported = insertMany(rows);
   res.json({ imported, total: rows.length });
+
+  if (syncEnabled && imported > 0) {
+    try {
+      const config = loadSyncConfig();
+      const importedLeads = db.prepare("SELECT * FROM leads WHERE sync_id IN (???)").all(importedSyncIds) as any[];
+      for (const lead of importedLeads) {
+        await createAgencyLead(config, { ...mapOcdLeadToAgencyLead(mapLead(lead)), sync_id: lead.sync_id });
+      }
+    } catch (err) {
+      console.error("[sync] failed to sync imported leads:", err);
+    }
+  }
 });
 
 function mapLead(row: any) {
@@ -154,6 +222,7 @@ function mapLead(row: any) {
     dnc: Boolean(row.dnc),
     last_called_at: row.last_called_at,
     call_count: row.call_count,
+    sync_id: row.sync_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

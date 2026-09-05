@@ -5,6 +5,9 @@ import leadsRoutes from "./routes/leads.js";
 import campaignsRoutes from "./routes/campaigns.js";
 import callLogsRoutes from "./routes/callLogs.js";
 import scriptsRoutes from "./routes/scripts.js";
+import syncRoutes from "./routes/sync.js";
+import { loadSyncConfig } from "./sync/config.js";
+import { SyncServiceImpl } from "./sync/service.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "4000", 10);
@@ -21,6 +24,20 @@ app.use("/api/leads", leadsRoutes);
 app.use("/api/campaigns", campaignsRoutes);
 app.use("/api/call-logs", callLogsRoutes);
 app.use("/api/scripts", scriptsRoutes);
+app.use("/api/sync", syncRoutes);
+
+// Initialize sync service after routes are mounted
+let syncService: SyncServiceImpl | null = null;
+if (process.env.TWENTY_BASE_URL && process.env.TWENTY_API_KEY) {
+  try {
+    const config = loadSyncConfig();
+    syncService = new SyncServiceImpl(config);
+    syncService.init().catch(console.error);
+    console.log("[sync] sync service enabled");
+  } catch (err) {
+    console.warn("[sync] failed to initialize:", err);
+  }
+}
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Cold Dialer API running on http://localhost:${PORT}`);

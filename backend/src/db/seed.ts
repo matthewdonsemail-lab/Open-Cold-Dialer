@@ -52,9 +52,8 @@ function seed() {
   console.log("Seeding database...");
 
   const userId = uuid();
-  const passwordHash = bcrypt.hashSync("password123", 10);
   db.prepare(
-    "INSERT INTO profiles (id, email, full_name, role) VALUES (?, ?, ?, ?)"
+    "INSERT OR REPLACE INTO profiles (id, email, full_name, role) VALUES (?, ?, ?, ?)"
   ).run(userId, "admin@example.com", "Admin User", "admin");
 
   const campaignIds: string[] = [];
@@ -63,13 +62,13 @@ function seed() {
     const id = uuid();
     campaignIds.push(id);
     db.prepare(
-      "INSERT INTO campaigns (id, name, type, status, created_by) VALUES (?, ?, 'outbound', 'active', ?)"
-    ).run(id, name, userId);
+      "INSERT OR REPLACE INTO campaigns (id, name, type, status, created_by, sync_id) VALUES (?, ?, 'outbound', 'active', ?, ?)"
+    ).run(id, name, userId, uuid());
   }
 
   const scriptId = uuid();
   db.prepare(
-    "INSERT INTO call_scripts (id, title, category, content, objection_responses, created_by) VALUES (?, ?, ?, ?, ?, ?)"
+    "INSERT OR REPLACE INTO call_scripts (id, title, category, content, objection_responses, created_by) VALUES (?, ?, ?, ?, ?, ?)"
   ).run(
     scriptId,
     "Cold Outreach Script",
@@ -100,8 +99,8 @@ function seed() {
     const campaignId = campaignIds[i % campaignIds.length];
 
     db.prepare(
-      `INSERT INTO leads (id, first_name, last_name, company, phone, email, city, state, zip, status, source, campaign_id, call_count, dnc)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'import', ?, ?, ?)`
+      `INSERT INTO leads (id, first_name, last_name, company, phone, email, city, state, zip, status, source, campaign_id, call_count, dnc, sync_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'import', ?, ?, ?, ?)`
     ).run(
       uuid(),
       firstName,
@@ -115,7 +114,8 @@ function seed() {
       status,
       campaignId,
       Math.floor(Math.random() * 5),
-      status === "do_not_contact" ? 1 : 0
+      status === "do_not_contact" ? 1 : 0,
+      uuid()
     );
   }
 
@@ -127,8 +127,8 @@ function seed() {
   for (const leadId of leadIds) {
     const outcome = pick(OUTCOMES);
     db.prepare(
-      `INSERT INTO call_logs (id, lead_id, user_id, direction, outcome, duration_seconds, notes, created_at)
-       VALUES (?, ?, ?, 'outbound', ?, ?, ?, datetime('now', '-' || ? || ' hours'))`
+      `INSERT INTO call_logs (id, lead_id, user_id, direction, outcome, duration_seconds, notes, sync_id)
+       VALUES (?, ?, ?, 'outbound', ?, ?, ?, ?)`
     ).run(
       uuid(),
       leadId,
@@ -136,11 +136,12 @@ function seed() {
       outcome,
       Math.floor(Math.random() * 180),
       outcome === "answered" ? "Spoke with decision maker" : "No response",
-      Math.floor(Math.random() * 72)
+      uuid()
     );
   }
 
-  console.log("Seeded: 1 admin user, 2 campaigns, 1 script, 20 leads, 5 call logs");
+  const count = db.prepare("SELECT COUNT(*) as count FROM leads").get() as { count: number };
+  console.log(`Seeded: ${count.count} leads in database`);
 }
 
 seed();

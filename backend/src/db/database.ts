@@ -16,6 +16,7 @@ const db: DatabaseType = new Database(DB_PATH);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
+// Create tables (idempotent with IF NOT EXISTS)
 db.exec(`
   CREATE TABLE IF NOT EXISTS profiles (
     id TEXT PRIMARY KEY,
@@ -33,6 +34,7 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed')),
     settings TEXT,
     created_by TEXT,
+    sync_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -58,6 +60,7 @@ db.exec(`
     dnc INTEGER NOT NULL DEFAULT 0,
     last_called_at TEXT,
     call_count INTEGER NOT NULL DEFAULT 0,
+    sync_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -89,6 +92,7 @@ db.exec(`
     sip_call_id TEXT,
     started_at TEXT,
     ended_at TEXT,
+    sync_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -113,16 +117,49 @@ db.exec(`
     created_by TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
-
-  CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
-  CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone);
-  CREATE INDEX IF NOT EXISTS idx_leads_campaign ON leads(campaign_id);
-  CREATE INDEX IF NOT EXISTS idx_leads_assigned ON leads(assigned_to);
-  CREATE INDEX IF NOT EXISTS idx_call_logs_lead ON call_logs(lead_id);
-  CREATE INDEX IF NOT EXISTS idx_call_logs_user ON call_logs(user_id);
-  CREATE INDEX IF NOT EXISTS idx_appointments_lead ON appointments(lead_id);
-  CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id);
-  CREATE INDEX IF NOT EXISTS idx_dnc_phone ON dnc_list(phone);
 `);
+
+// Run migrations for existing databases
+const migrations = [
+  `ALTER TABLE leads ADD COLUMN sync_id TEXT`,
+  `ALTER TABLE campaigns ADD COLUMN sync_id TEXT`,
+  `ALTER TABLE call_logs ADD COLUMN sync_id TEXT`,
+];
+
+for (const migration of migrations) {
+  try {
+    db.exec(migration);
+  } catch (err) {
+    // Ignore "already exists" errors - column may already be present
+    const errMsg = String(err);
+    if (!errMsg.includes('already exists') && !errMsg.includes('duplicate column')) {
+      console.warn('[db] migration warning:', err);
+    }
+  }
+}
+
+// Create indexes
+const indexStatements = [
+  'CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status)',
+  'CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone)',
+  'CREATE INDEX IF NOT EXISTS idx_leads_campaign ON leads(campaign_id)',
+  'CREATE INDEX IF NOT EXISTS idx_leads_assigned ON leads(assigned_to)',
+  'CREATE INDEX IF NOT EXISTS idx_leads_sync_id ON leads(sync_id)',
+  'CREATE INDEX IF NOT EXISTS idx_call_logs_lead ON call_logs(lead_id)',
+  'CREATE INDEX IF NOT EXISTS idx_call_logs_user ON call_logs(user_id)',
+  'CREATE INDEX IF NOT EXISTS idx_call_logs_sync_id ON call_logs(sync_id)',
+  'CREATE INDEX IF NOT EXISTS idx_appointments_lead ON appointments(lead_id)',
+  'CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id)',
+  'CREATE INDEX IF NOT EXISTS idx_dnc_phone ON dnc_list(phone)',
+  'CREATE INDEX IF NOT EXISTS idx_campaigns_sync_id ON campaigns(sync_id)',
+];
+
+for (const stmt of indexStatements) {
+  try {
+    db.exec(stmt);
+  } catch {}
+}
+
+console.log('[db] database initialized and migrated');
 
 export default db;
