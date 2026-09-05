@@ -1,39 +1,40 @@
-import React from "react";
+import React from 'react';
+import { Badge } from '@/components/ui/Badge';
 
 interface StatusBadgeProps {
   status: string;
 }
 
-const statusColors: Record<string, string> = {
-  new: "bg-brand-100 text-brand-800",
-  contacted: "bg-blue-100 text-blue-800",
-  interested: "bg-amber-100 text-amber-800",
-  not_interested: "bg-gray-100 text-gray-800",
-  callback: "bg-purple-100 text-purple-800",
-  converted: "bg-green-100 text-green-800",
-  do_not_contact: "bg-red-100 text-red-800",
-  active: "bg-green-100 text-green-800",
-  paused: "bg-yellow-100 text-yellow-800",
-  scheduled: "bg-brand-100 text-brand-800",
-  completed: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
-  rescheduled: "bg-yellow-100 text-yellow-800",
-  answered: "bg-green-100 text-green-800",
-  no_answer: "bg-gray-100 text-gray-800",
-  busy: "bg-red-100 text-red-800",
-  voicemail: "bg-yellow-100 text-yellow-800",
-  dnc: "bg-red-100 text-red-800",
-  wrong_number: "bg-gray-100 text-gray-800",
-  disconnected: "bg-gray-100 text-gray-800",
+const statusVariants: Record<string, 'blue' | 'green' | 'amber' | 'red' | 'gray' | 'purple'> = {
+  new: 'blue',
+  contacted: 'blue',
+  interested: 'amber',
+  not_interested: 'gray',
+  callback: 'purple',
+  converted: 'green',
+  do_not_contact: 'red',
+  active: 'green',
+  paused: 'amber',
+  scheduled: 'blue',
+  completed: 'green',
+  cancelled: 'red',
+  rescheduled: 'amber',
+  answered: 'green',
+  no_answer: 'gray',
+  busy: 'red',
+  voicemail: 'amber',
+  dnc: 'red',
+  wrong_number: 'gray',
+  disconnected: 'gray',
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const colorClass = statusColors[status] ?? "bg-gray-100 text-gray-800";
+  const variant = statusVariants[status] ?? 'gray';
+  const label = status.replace(/_/g, ' ');
+
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${colorClass}`}
-    >
-      {status.replace(/_/g, " ")}
-    </span>
+    <Badge variant={variant} size="sm">
+      {label}
+    </Badge>
   );
 }

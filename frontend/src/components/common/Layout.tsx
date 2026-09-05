@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { signOut } from "@/lib/auth";
+import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { signOut } from '@/lib/auth';
 import {
   LayoutDashboard,
   Users,
@@ -15,15 +15,15 @@ import {
   FileText,
   Bell,
   Search,
-} from "lucide-react";
+} from 'lucide-react';
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/leads", label: "Leads", icon: Users },
-  { to: "/campaigns", label: "Campaigns", icon: Target },
-  { to: "/scripts", label: "Scripts", icon: FileText },
-  { to: "/history", label: "Call History", icon: Clock },
-  { to: "/admin", label: "Admin", icon: Shield },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/leads', label: 'Leads', icon: Users },
+  { to: '/campaigns', label: 'Campaigns', icon: Target },
+  { to: '/scripts', label: 'Scripts', icon: FileText },
+  { to: '/history', label: 'Call History', icon: Clock },
+  { to: '/admin', label: 'Admin', icon: Shield },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -33,23 +33,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   async function handleSignOut() {
     await signOut();
-    navigate("/login");
+    navigate('/login');
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-surface-secondary">
       <div
         className={`fixed inset-0 z-40 bg-black/50 lg:hidden ${
-          sidebarOpen ? "block" : "hidden"
+          sidebarOpen ? 'block' : 'hidden'
         }`}
         onClick={() => setSidebarOpen(false)}
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-border-subtle flex flex-col transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-5 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-5 border-b border-border-subtle">
           <NavLink to="/dashboard" className="flex items-center gap-2">
             <Phone className="w-6 h-6 text-brand-600" />
             <span className="font-bold text-brand-900 text-lg">Cold Dialer</span>
@@ -65,13 +65,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === "/dashboard"}
+                end={item.to === '/dashboard'}
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                  `flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition ${
                     isActive
-                      ? "bg-brand-50 text-brand-700"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-text-secondary hover:bg-surface-tertiary hover:text-text-primary'
                   }`
                 }
               >
@@ -81,16 +81,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-border-subtle">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
               <Shield className="w-4 h-4 text-brand-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.user_metadata?.full_name ?? user?.email ?? "User"}
+              <p className="text-sm font-medium text-text-primary truncate">
+                {user?.user_metadata?.full_name ?? user?.email ?? 'User'}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-xs text-text-secondary truncate">{user?.email}</p>
             </div>
           </div>
           <button
@@ -103,7 +103,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-8">
+        <header className="sticky top-0 z-30 bg-white border-b border-border-subtle h-16 flex items-center justify-between px-4 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               className="lg:hidden"
@@ -112,16 +112,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Menu className="w-6 h-6 text-gray-600" />
             </button>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary w-4 h-4" />
               <input
                 type="search"
                 placeholder="Search leads, calls..."
-                className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none w-64 hidden sm:block"
+                className="pl-10 pr-4 py-2 border border-border-subtle rounded-md text-sm bg-surface-secondary focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none w-64 hidden sm:block"
               />
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+            <button className="relative p-2 text-text-secondary hover:text-text-primary hover:bg-surface-tertiary rounded-md transition">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
             </button>

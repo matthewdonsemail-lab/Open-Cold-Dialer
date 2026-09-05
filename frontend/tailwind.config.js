@@ -2,6 +2,7 @@
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   safelist: [
+    // Brand colors
     "bg-blue-50", "text-blue-600",
     "bg-emerald-50", "text-emerald-600",
     "bg-amber-50", "text-amber-600",
@@ -14,6 +15,11 @@ export default {
     "bg-amber-500",
     "bg-gray-400",
     "bg-green-500",
+    // UI primitive data attributes
+    "ods-btn",
+    "ods-input",
+    "ods-badge",
+    "ods-card",
   ],
   theme: {
     extend: {
@@ -33,6 +39,22 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+      },
+      spacing: {
+        'sp-1': 'var(--ods-sp-1)',
+        'sp-2': 'var(--ods-sp-2)',
+        'sp-3': 'var(--ods-sp-3)',
+        'sp-4': 'var(--ods-sp-4)',
+        'sp-5': 'var(--ods-sp-5)',
+        'sp-6': 'var(--ods-sp-6)',
+        'sp-8': 'var(--ods-sp-8)',
+      },
+      borderRadius: {
+        'ods-xs': 'var(--ods-radius-xs)',
+        'ods-sm': 'var(--ods-radius-sm)',
+        'ods-md': 'var(--ods-radius-md)',
+        'ods-lg': 'var(--ods-radius-lg)',
+        'ods-pill': 'var(--ods-radius-pill)',
       },
     },
   },
