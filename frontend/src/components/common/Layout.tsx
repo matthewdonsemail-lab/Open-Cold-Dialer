@@ -5,16 +5,17 @@ import { signOut } from '@/lib/auth';
 import {
   LayoutDashboard,
   Users,
-  Phone,
+  Target,
+  FileText,
   Clock,
+  Shield,
+  Phone,
+  ChevronDown,
   LogOut,
   Menu,
   X,
-  Shield,
-  Target,
-  FileText,
-  Bell,
   Search,
+  Bell,
 } from 'lucide-react';
 
 const navItems = [
@@ -37,28 +38,50 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface-secondary">
+    <div className="flex h-screen overflow-hidden bg-[var(--ods-bg-secondary,#fafafb)] text-[var(--ods-text-primary,#18181b)] font-sans antialiased">
+      {/* mobile backdrop */}
       <div
-        className={`fixed inset-0 z-40 bg-black/50 lg:hidden ${
+        className={`fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden ${
           sidebarOpen ? 'block' : 'hidden'
         }`}
         onClick={() => setSidebarOpen(false)}
       />
+
+      {/* twenty-style navigation drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-border-subtle flex flex-col transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto ${
+        className={`fixed inset-y-0 left-0 z-50 w-60 bg-[var(--ods-bg-secondary,#fafafb)] border-r border-[var(--ods-border,#e5e5ea)] flex flex-col select-none transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-5 border-b border-border-subtle">
-          <NavLink to="/dashboard" className="flex items-center gap-2">
-            <Phone className="w-6 h-6 text-brand-600" />
-            <span className="font-bold text-brand-900 text-lg">Cold Dialer</span>
-          </NavLink>
-          <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
-            <X className="w-5 h-5 text-gray-500" />
+        {/* header: workspace dropdown trigger (28px height inside 40px container) */}
+        <div className="flex items-center justify-between h-10 px-2 pt-1">
+          <div className="flex items-center gap-2 h-7 px-1.5 rounded-[6px] hover:bg-black/[0.04] cursor-pointer transition-colors max-w-[calc(100%-32px)]">
+            <div className="w-4 h-4 rounded-[4px] bg-[var(--ods-brand-600,#2563eb)] flex items-center justify-center flex-shrink-0">
+              <Phone className="w-2.5 h-2.5 text-white" />
+            </div>
+            <span className="text-[13px] font-medium tracking-tight truncate text-[var(--ods-text-primary,#18181b)]">
+              Cold Dialer
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-[var(--ods-text-tertiary,#8a8a93)] flex-shrink-0" />
+          </div>
+
+          <button
+            className="lg:hidden p-1 text-[var(--ods-text-secondary,#575757)] hover:text-[var(--ods-text-primary,#18181b)]"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+
+        {/* section title */}
+        <div className="px-3 pt-3 pb-1">
+          <span className="text-[11px] font-semibold text-[var(--ods-text-tertiary,#8a8a93)] tracking-wider uppercase">
+            Workspace
+          </span>
+        </div>
+
+        {/* navigation rows (strictly 28px height) */}
+        <nav className="flex-1 overflow-y-auto px-2 space-y-0.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -68,66 +91,71 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 end={item.to === '/dashboard'}
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition ${
+                  `flex items-center gap-2 px-2 h-7 rounded-[4px] text-[13px] font-medium transition-colors ${
                     isActive
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'text-text-secondary hover:bg-surface-tertiary hover:text-text-primary'
+                      ? 'bg-black/[0.06] text-[var(--ods-text-primary,#18181b)]'
+                      : 'text-[var(--ods-text-secondary,#575757)] hover:bg-black/[0.04] hover:text-[var(--ods-text-primary,#18181b)]'
                   }`
                 }
               >
-                <Icon className="w-5 h-5" />
-                {item.label}
+                <Icon className="w-4 h-4 flex-shrink-0 text-[var(--ods-text-secondary,#71717a)]" />
+                <span className="truncate">{item.label}</span>
               </NavLink>
             );
           })}
         </nav>
-        <div className="p-4 border-t border-border-subtle">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-brand-600" />
+
+        {/* compact user footer */}
+        <div className="p-2 border-t border-[var(--ods-border,#e5e5ea)]">
+          <div className="flex items-center justify-between h-8 px-2 rounded-[6px] hover:bg-black/[0.04] transition-colors">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-5 h-5 rounded-full bg-black/10 flex items-center justify-center text-[10px] font-medium text-[var(--ods-text-primary,#18181b)] flex-shrink-0">
+                {(user?.user_metadata?.full_name ?? user?.email ?? 'U')[0].toUpperCase()}
+              </div>
+              <span className="text-[12px] font-medium text-[var(--ods-text-secondary,#575757)] truncate">
+                {user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'User'}
+              </span>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-text-primary truncate">
-                {user?.user_metadata?.full_name ?? user?.email ?? 'User'}
-              </p>
-              <p className="text-xs text-text-secondary truncate">{user?.email}</p>
-            </div>
+            <button
+              onClick={handleSignOut}
+              title="Sign Out"
+              className="text-[var(--ods-text-tertiary,#8a8a93)] hover:text-red-600 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
         </div>
       </aside>
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 bg-white border-b border-border-subtle h-16 flex items-center justify-between px-4 lg:px-8">
+
+      {/* main content area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[var(--ods-bg-primary,#ffffff)]">
+        {/* slim 40px top bar */}
+        <header className="sticky top-0 z-30 bg-[var(--ods-bg-primary,#ffffff)] border-b border-[var(--ods-border,#e5e5ea)] h-10 flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
-              className="lg:hidden"
+              className="lg:hidden p-1 text-[var(--ods-text-secondary,#575757)]"
               onClick={() => setSidebarOpen(true)}
             >
-              <Menu className="w-6 h-6 text-gray-600" />
+              <Menu className="w-4 h-4" />
             </button>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary w-4 h-4" />
+            <div className="relative flex items-center">
+              <Search className="absolute left-2 text-[var(--ods-text-tertiary,#8a8a93)] w-3.5 h-3.5" />
               <input
                 type="search"
-                placeholder="Search leads, calls..."
-                className="pl-10 pr-4 py-2 border border-border-subtle rounded-md text-sm bg-surface-secondary focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none w-64 hidden sm:block"
+                placeholder="Search..."
+                className="pl-7 pr-2.5 h-7 border border-[var(--ods-border,#e5e5ea)] rounded-[4px] text-[12px] bg-[var(--ods-bg-secondary,#fafafb)] focus:bg-white focus:border-[var(--ods-brand-600,#2563eb)] outline-none w-52 transition-all hidden sm:block"
               />
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="relative p-2 text-text-secondary hover:text-text-primary hover:bg-surface-tertiary rounded-md transition">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            <button className="relative p-1 text-[var(--ods-text-secondary,#575757)] hover:text-[var(--ods-text-primary,#18181b)] hover:bg-black/[0.04] rounded-[4px] transition">
+              <Bell className="w-4 h-4" />
             </button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+
+        {/* content body */}
+        <main className="flex-1 overflow-y-auto p-6 bg-[var(--ods-bg-primary,#ffffff)]">
           {children}
         </main>
       </div>
