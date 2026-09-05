@@ -20,10 +20,20 @@ export default {
     "ods-input",
     "ods-badge",
     "ods-card",
+    // Twenty design tokens
+    "bg-surface-primary",
+    "bg-surface-secondary",
+    "bg-surface-tertiary",
+    "border-subtle",
+    "border-strong",
+    "text-primary",
+    "text-secondary",
+    "text-tertiary",
   ],
   theme: {
     extend: {
       colors: {
+        // Brand colors
         brand: {
           50: "#eff6ff",
           100: "#dbeafe",
@@ -36,25 +46,49 @@ export default {
           800: "#1e40af",
           900: "#1e3a8a",
         },
+        // Twenty-inspired surface colors
+        surface: {
+          primary: "var(--ods-bg-primary)",
+          secondary: "var(--ods-bg-secondary)",
+          tertiary: "var(--ods-bg-tertiary)",
+        },
+        // Border colors
+        border: {
+          subtle: "var(--ods-border)",
+          strong: "var(--ods-border-strong)",
+        },
+        // Text colors
+        text: {
+          primary: "var(--ods-text-primary)",
+          secondary: "var(--ods-text-secondary)",
+          tertiary: "var(--ods-text-tertiary)",
+        },
+        // Semantic colors
+        accent: {
+          primary: "var(--ods-brand-600)",
+          success: "var(--ods-success)",
+          warning: "var(--ods-warning)",
+          danger: "var(--ods-danger)",
+        },
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
       spacing: {
-        'sp-1': 'var(--ods-sp-1)',
-        'sp-2': 'var(--ods-sp-2)',
-        'sp-3': 'var(--ods-sp-3)',
-        'sp-4': 'var(--ods-sp-4)',
-        'sp-5': 'var(--ods-sp-5)',
-        'sp-6': 'var(--ods-sp-6)',
-        'sp-8': 'var(--ods-sp-8)',
+        "sp-1": "var(--ods-sp-1)",
+        "sp-2": "var(--ods-sp-2)",
+        "sp-3": "var(--ods-sp-3)",
+        "sp-4": "var(--ods-sp-4)",
+        "sp-5": "var(--ods-sp-5)",
+        "sp-6": "var(--ods-sp-6)",
+        "sp-8": "var(--ods-sp-8)",
       },
       borderRadius: {
-        'ods-xs': 'var(--ods-radius-xs)',
-        'ods-sm': 'var(--ods-radius-sm)',
-        'ods-md': 'var(--ods-radius-md)',
-        'ods-lg': 'var(--ods-radius-lg)',
-        'ods-pill': 'var(--ods-radius-pill)',
+        "ods-xs": "var(--ods-radius-xs)",
+        "ods-sm": "var(--ods-radius-sm)",
+        "ods-md": "var(--ods-radius-md)",
+        "ods-lg": "var(--ods-radius-lg)",
+        "ods-pill": "var(--ods-radius-pill)",
       },
     },
   },
