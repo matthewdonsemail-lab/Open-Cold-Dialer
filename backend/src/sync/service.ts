@@ -1,6 +1,7 @@
 import type { SyncConfig } from "./config.js"
 import * as leadsSync from "./leads.js"
 import * as campaignsSync from "./campaigns.js"
+import * as prospectsSync from "./prospects.js"
 import * as callLogsSync from "./callLogs.js"
 import * as inbound from "./inbound.js"
 
@@ -15,7 +16,7 @@ export interface SyncState {
 export interface SyncService {
   init(): Promise<void>
   runOutboundOnce(): Promise<SyncState>
-  runInboundOnce(): Promise<SyncState>
+  runInboundOnce(): Promise<inbound.InboundSyncResult>
   onWebhook(payload: unknown): Promise<void>
   getState(): SyncState
 }
@@ -50,6 +51,7 @@ export class SyncServiceImpl implements SyncService {
     console.log("[sync] initializing sync service")
     await Promise.allSettled([
       leadsSync.ensureAgencyLeadObject(this.config),
+      prospectsSync.ensureAgencyProspectObject(this.config),
       campaignsSync.ensureAgencyCampaignObject(this.config),
     ])
     console.log("[sync] sync service initialized")
@@ -111,22 +113,23 @@ export class SyncServiceImpl implements SyncService {
     return this.state
   }
 
-  async runInboundOnce(): Promise<SyncState> {
-    const errors: string[] = []
-    try {
-      await inbound.pollLeads(this.config, this.state.lastInboundSyncAt)
-    } catch (err: any) {
-      errors.push(`[inbound-leads] ${err?.message || String(err)}`)
-    }
-    try {
-      await inbound.pollCampaigns(this.config, this.state.lastInboundSyncAt)
-    } catch (err: any) {
-      errors.push(`[inbound-campaigns] ${err?.message || String(err)}`)
-    }
-
+  async runInboundOnce(): Promise<inbound.InboundSyncResult> {
+    const [leadsResult, prospectsResult] = await Promise.all([
+      inbound.pollLeads(this.config, this.state.lastInboundSyncAt),
+      inbound.pollProspects(this.config, this.state.lastInboundSyncAt),
+    ])
     this.state.lastInboundSyncAt = new Date().toISOString()
-    this.state.errors = errors.slice(-20)
-    return this.state
+    
+    const result: inbound.InboundSyncResult = {
+      created: leadsResult.created + prospectsResult.created,
+      updated: leadsResult.updated + prospectsResult.updated,
+      errors: [...leadsResult.errors, ...prospectsResult.errors],
+    }
+    
+    if (result.errors.length > 0) {
+      this.state.errors = [...result.errors.slice(-10), ...this.state.errors]
+    }
+    return result
   }
 
   async onWebhook(payload: unknown): Promise<void> {

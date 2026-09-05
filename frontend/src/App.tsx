@@ -8,6 +8,7 @@ const LoginPage = React.lazy(() => import("@/pages/LoginPage").then((m) => ({ de
 const SignupPage = React.lazy(() => import("@/pages/SignupPage").then((m) => ({ default: m.SignupPage })));
 const DashboardPage = React.lazy(() => import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
 const LeadsPage = React.lazy(() => import("@/pages/LeadsPage").then((m) => ({ default: m.LeadsPage })));
+const ProspectPage = React.lazy(() => import("@/pages/ProspectPage").then((m) => ({ default: m.ProspectPage })));
 const LeadDetailPage = React.lazy(() => import("@/pages/LeadDetailPage").then((m) => ({ default: m.LeadDetailPage })));
 const CampaignPage = React.lazy(() => import("@/pages/CampaignPage").then((m) => ({ default: m.CampaignPage })));
 const CallHistoryPage = React.lazy(() => import("@/pages/CallHistoryPage").then((m) => ({ default: m.CallHistoryPage })));
@@ -52,6 +53,7 @@ function AppRoutes() {
                   <Route index element={<Navigate to="/dashboard" replace />} />
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="leads" element={<LeadsPage />} />
+                  <Route path="prospects" element={<ProspectPage />} />
                   <Route path="leads/:leadId" element={<LeadDetailPage />} />
                   <Route path="campaigns" element={<CampaignPage />} />
                   <Route path="scripts" element={<ScriptsPage />} />

@@ -1,3 +1,17 @@
+import path from "path";
+import { fileURLToPath } from "url";
+import { config } from "dotenv";
+
+// Load environment variables from project root .env.local
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.resolve(__dirname, "../../.env.local");
+const result = config({ path: envPath });
+if (result.error) {
+  console.warn("[env] failed to load .env.local:", result.error.message);
+} else {
+  console.log("[env] loaded from", envPath);
+}
+
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.js";
@@ -5,6 +19,7 @@ import leadsRoutes from "./routes/leads.js";
 import campaignsRoutes from "./routes/campaigns.js";
 import callLogsRoutes from "./routes/callLogs.js";
 import scriptsRoutes from "./routes/scripts.js";
+import prospectsRoutes from "./routes/prospects.js";
 import syncRoutes from "./routes/sync.js";
 import { loadSyncConfig } from "./sync/config.js";
 import { SyncServiceImpl } from "./sync/service.js";
@@ -21,6 +36,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/leads", leadsRoutes);
+app.use("/api/prospects", prospectsRoutes);
 app.use("/api/campaigns", campaignsRoutes);
 app.use("/api/call-logs", callLogsRoutes);
 app.use("/api/scripts", scriptsRoutes);

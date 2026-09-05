@@ -117,6 +117,32 @@ db.exec(`
     created_by TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS prospects (
+    id TEXT PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT,
+    company TEXT,
+    phone TEXT,
+    email TEXT,
+    website TEXT,
+    address TEXT,
+    city TEXT,
+    state TEXT,
+    zip TEXT,
+    status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'interested', 'not_interested', 'callback', 'converted', 'do_not_contact')),
+    source TEXT,
+    campaign_id TEXT,
+    assigned_to TEXT,
+    tags TEXT,
+    notes TEXT,
+    dnc INTEGER NOT NULL DEFAULT 0,
+    last_contacted_at TEXT,
+    contact_count INTEGER NOT NULL DEFAULT 0,
+    sync_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 // Run migrations for existing databases
@@ -152,6 +178,10 @@ const indexStatements = [
   'CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id)',
   'CREATE INDEX IF NOT EXISTS idx_dnc_phone ON dnc_list(phone)',
   'CREATE INDEX IF NOT EXISTS idx_campaigns_sync_id ON campaigns(sync_id)',
+  'CREATE INDEX IF NOT EXISTS idx_prospects_status ON prospects(status)',
+  'CREATE INDEX IF NOT EXISTS idx_prospects_phone ON prospects(phone)',
+  'CREATE INDEX IF NOT EXISTS idx_prospects_campaign ON prospects(campaign_id)',
+  'CREATE INDEX IF NOT EXISTS idx_prospects_sync_id ON prospects(sync_id)',
 ];
 
 for (const stmt of indexStatements) {

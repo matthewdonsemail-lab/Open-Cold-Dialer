@@ -54,11 +54,20 @@ router.post("/poll", async (_req: Request, res: Response) => {
 // POST /api/sync/inbound — manual trigger for inbound sync
 router.post("/inbound", async (_req: Request, res: Response) => {
   try {
-    const state = await getService().runInboundOnce()
-    res.json({ state })
+    const result = await getService().runInboundOnce()
+    res.json({ 
+      result,
+      lastInboundSyncAt: getService().getState().lastInboundSyncAt 
+    })
   } catch (err: any) {
     res.status(500).json({ error: err.message })
   }
+})
+
+// GET /api/sync/leads — list leads synced from Twenty
+router.get("/leads", (_req: Request, res: Response) => {
+  const rows = db.prepare("SELECT id, first_name, last_name, email, phone, status, sync_id, created_at FROM leads ORDER BY created_at DESC").all()
+  res.json(rows)
 })
 
 export default router

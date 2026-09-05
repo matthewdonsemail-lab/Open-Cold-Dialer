@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { signOut } from '@/lib/auth';
 import {
@@ -31,6 +31,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isLeadDetail = location.pathname.startsWith('/leads/') && location.pathname !== '/leads';
+  const currentNav = navItems.find((n) => location.pathname.startsWith(n.to));
 
   async function handleSignOut() {
     await signOut();
@@ -129,8 +133,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* main content area */}
       <div className="flex-1 flex flex-col min-w-0 bg-[var(--ods-bg-primary,#ffffff)]">
-        {/* slim 40px top bar */}
-        <header className="sticky top-0 z-30 bg-[var(--ods-bg-primary,#ffffff)] border-b border-[var(--ods-border,#e5e5ea)] h-10 flex items-center justify-between px-4">
+        {/* twenty-style 40px top bar with dynamic breadcrumbs */}
+        <header className="sticky top-0 z-30 bg-[var(--ods-bg-primary,#ffffff)] border-b border-[var(--ods-border,#e5e5ea)] h-10 flex items-center justify-between px-3 select-none">
           <div className="flex items-center gap-3">
             <button
               className="lg:hidden p-1 text-[var(--ods-text-secondary,#575757)]"
@@ -138,15 +142,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               <Menu className="w-4 h-4" />
             </button>
-            <div className="relative flex items-center">
-              <Search className="absolute left-2 text-[var(--ods-text-tertiary,#8a8a93)] w-3.5 h-3.5" />
-              <input
-                type="search"
-                placeholder="Search..."
-                className="pl-7 pr-2.5 h-7 border border-[var(--ods-border,#e5e5ea)] rounded-[4px] text-[12px] bg-[var(--ods-bg-secondary,#fafafb)] focus:bg-white focus:border-[var(--ods-brand-600,#2563eb)] outline-none w-52 transition-all hidden sm:block"
-              />
+
+            {/* twenty breadcrumb trail */}
+            <div className="flex items-center gap-1.5 text-[13px]">
+              {isLeadDetail ? (
+                <>
+                  <button
+                    onClick={() => navigate('/leads')}
+                    className="flex items-center gap-1.5 text-[var(--ods-text-secondary,#575757)] hover:text-[var(--ods-text-primary,#18181b)] transition-colors"
+                  >
+                    <Users className="w-3.5 h-3.5 opacity-70" />
+                    <span>Leads</span>
+                  </button>
+                  <span className="text-[var(--ods-text-tertiary,#8a8a93)]">/</span>
+                  <span className="font-semibold text-[var(--ods-text-primary,#18181b)]">
+                    Lead Record
+                  </span>
+                </>
+              ) : (
+                <div className="flex items-center gap-1.5 font-medium text-[var(--ods-text-primary,#18181b)]">
+                  {currentNav && <currentNav.icon className="w-3.5 h-3.5 opacity-70 text-[var(--ods-text-secondary,#71717a)]" />}
+                  <span>{currentNav?.label ?? 'Workspace'}</span>
+                </div>
+              )}
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             <button className="relative p-1 text-[var(--ods-text-secondary,#575757)] hover:text-[var(--ods-text-primary,#18181b)] hover:bg-black/[0.04] rounded-[4px] transition">
               <Bell className="w-4 h-4" />

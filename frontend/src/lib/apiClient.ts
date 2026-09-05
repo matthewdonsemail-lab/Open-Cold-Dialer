@@ -70,6 +70,22 @@ export const api = {
       }),
   },
 
+  prospects: {
+    list: () => request<any[]>("/api/prospects"),
+    get: (id: string) => request<any>(`/api/prospects/${id}`),
+    create: (data: any) =>
+      request<any>("/api/prospects", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/prospects/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) =>
+      request<void>(`/api/prospects/${id}`, { method: "DELETE" }),
+    import: (rows: any[]) =>
+      request<{ imported: number; total: number }>("/api/prospects/import", {
+        method: "POST",
+        body: JSON.stringify({ rows }),
+      }),
+  },
+
   campaigns: {
     list: () => request<any[]>("/api/campaigns"),
     get: (id: string) => request<any>(`/api/campaigns/${id}`),
